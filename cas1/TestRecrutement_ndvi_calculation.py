@@ -51,18 +51,24 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument('suffixes_name', type=str, nargs='+',
                     help='Input images file suffixes (ex: _FRE_ConcatenateImageBGRPIR.tif)')
-parser.add_argument('--input-directory', dest='input_dir', action='store_const',
+
+parser.add_argument('--input-directory', dest='input_dir', action='store',
                     default=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'var', 'datas'),
                     help='Input images file directory')
-parser.add_argument('--output-directory', dest='output_dir', action='store_const',
+
+parser.add_argument('--output-directory', dest='output_dir', action='store',
                     default=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'var', 'results'),
                     help='Output images file directory')
-parser.add_argument('--nir-band-number', dest='nir_band_number', action='store_const', default=3,
+
+parser.add_argument('--nir-band-number', dest='nir_band_number', action='store', default=3,
                     help='Inform the position of the near infrared bands in the images (0 for the first band)')
-parser.add_argument('--red-band-nb', dest='red_band_number', action='store_const', default=2,
+
+parser.add_argument('--red-band-nb', dest='red_band_number', action='store', default=2,
                     help='Inform the position of the red bands in the images (0 for the first band)')
+
 parser.add_argument('--numpy', dest='numpy', action='store_true',
                     help='Calculate NDVI with numpy')
+
 args = parser.parse_args()
 
 # Start time

@@ -1,34 +1,19 @@
 #!/usr/bin/python
 
 """
-This code was created by Ghaith AMIN, PhD at CESBIO/MEOSS 
+This code was created by Ghaith AMIN, PhD at CESBIO/MEOSS
 Calculating Normalized Difference Vegetation Index (NDVI) using Sentinel-2
 """
-
-import os
 import argparse
+import os
+
 import otbApplication
 
+# meoss libs can be set to git submodule, and therefore be pull/push for other people/script independently of NVDI calculations
+from meoss_libs.libs_file_management import search_B4_B8
 
 
-def search_files(directory='.', extension='jp2', resolution='10m', band='B04'):
-    images=[]
-    extension = extension.lower()      
-    resolution = resolution.lower()
-    band = band.upper()  
- 
-    for dirpath, dirnames, files in os.walk(directory): 
-                                                       
-        for name in files:
-            if extension and name.lower().endswith(extension) and name.lower().find(resolution) >= 0 and name.upper().find(band) >= 0: 
-                abspath = os.path.abspath(os.path.join(dirpath, name))  
-                images.append(abspath)                                 
-
-    print(str(len(images)) + " image(s) found")
-    return images
-
-    
-def ndvi(argsformat, red, nir, mask, out, shp):  
+def ndvi(argsformat, red, nir, mask, out, shp):
 
     # the sentinel-2 from ESA (S2-SEN2COR) only provides 20 m cloud mask, this why it's necessary to do the superimpose.
     app0 = otbApplication.Registry.CreateApplication("Superimpose")
@@ -86,46 +71,33 @@ def ndvi(argsformat, red, nir, mask, out, shp):
         
 
 if __name__ == "__main__":
-    # Make parser object
-    parser = argparse.ArgumentParser(description= """ Compute the Spectral Index NDVI from Sentinel-2 """)
-    parser.add_argument('-s2dir', action='store', required=True, help='Directory containing Sentinel-2 L2A ')
-    parser.add_argument('-format', choices=['S2-2A','S2-2A-ESA','S2-3A'], required=True, help='Sentinel-2 level : S2-2A = image processed with MAJA, S2-3A = cloud free synthese processed with WASP, S2-2A-ESA = image processed with SEN2COR')
-    parser.add_argument('-shpdir', action='store', required=False, help=' [Optional] shapefile (must have same CRS as input image) to clip the output computed index')
-    parser.add_argument('-indexdir', action='store', required=True, help='Output directory for computed NDVIs')
-    
-     
-    args=parser.parse_args()
-    
-    # search bands in S2-ESA folder
-    if args.format == "S2-2A-ESA" :
- 
-        B4=search_files(args.s2dir)
-        B8=search_files(args.s2dir,'jp2', resolution='10m', band='B08') 
-        cloud_masks=search_files(args.s2dir, 'jp2', resolution='20m', band='CLD')
-        print (str(cloud_masks))
-        
-    # search bands in S2-Thiea folders
-    elif args.format == "S2-2A" :
-        
-        B4=search_files(args.s2dir, 'tif', resolution='SENTINEL2', band='_FRE_B4.tif')
-        B8=search_files(args.s2dir, 'tif', resolution='SENTINEL2', band='_FRE_B8.tif') 
-        cloud_masks=search_files(args.s2dir, 'tif', resolution='SENTINEL2', band='_CLM_R1.tif')
-        print (str(cloud_masks))
 
-    # search bands in S2-Thiea syntheses folders
-    elif args.format == "S2-3A" :
-        B4=search_files(args.s2dir, 'tif', resolution='SENTINEL2', band='_FRC_B4.tif')
-        B8=search_files(args.s2dir, 'tif', resolution='SENTINEL2', band='_FRC_B8.tif')
-        cloud_masks=search_files(args.s2dir, 'tif', resolution='SENTINEL2', band='_FLG_R1')  
-        
-    else:
-        print("S2 format not recognized!")
-        exit
+    parser = argparse.ArgumentParser( prog='NDVI calculation', description='Generate ndvi tif')
+    subparsers = parser.add_subparsers(help='sub-command help')
+
+    parser.add_argument('--input-directory', '-i',  dest='input_dir', default=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'var', 'datas'), help='Input images file directory')
+    parser.add_argument('--output-directory', '-o', dest='output_dir', default=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'var', 'results'), help='Output images file directory')
+
+    parser_concat = subparsers.add_parser('concat', help='options for concat mode')
+    parser_concat.add_argument('--nir-band-nb', '-nb',  dest='nir_band_nb', default=4, help='Inform the position of the near infrared bands in the images (1 for the first band)')
+    parser_concat.add_argument('--red-band-nb', '-rb',  dest='red_band_nb', default=3, help='Inform the position of the red bands in the images (1 for the first band)')
+    parser_concat.add_argument('suffixes_name', type=str, nargs='+', help='Input images file suffixes (ex: _FRE_ConcatenateImageBGRPIR.tif)')
+
+    parser_band = subparsers.add_parser('band', help='options for band mode')
+    parser_band.add_argument('--format', '-f' , choices=['S2-2A','S2-2A-ESA','S2-3A'], required=True, help='Sentinel-2 level : S2-2A = image processed with MAJA, S2-3A = cloud free synthese processed with WASP, S2-2A-ESA = image processed with SEN2COR')
+    parser_band.add_argument('--shapefile-directory', '-shpdir', required=False, help=' [Optional] shapefile (must have same CRS as input image) to clip the output computed index')
+
+    args = parser.parse_args()
+
+
+    B4 = search_B4_B8(args.input_dir, args.format)['B4']
+    B8 = search_B4_B8(args.input_dir, args.format)['B8']
+    cloud_masks = search_B4_B8(args.input_dir, args.format)['cloud_masks']
+
+    if not os.path.isdir(args.output_dir):
+        os.makedirs(args.output_dir, exist_ok=True)
     
-    if not os.path.isdir(args.indexdir):   
-        os.mkdir(args.indexdir)
-    
-    abspathout = os.path.abspath(args.indexdir)
+    abspathout = os.path.abspath(args.output_dir)
 
                
     for red, nir, mask in zip (B4, B8, cloud_masks) : 

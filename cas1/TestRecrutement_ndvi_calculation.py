@@ -23,17 +23,13 @@ By : Agathe Fontaine
 """
 
 import argparse
-
-# (0) INPUTS/OUTPUTS
-
-# (0.1) LIBRAIRIES IMPORT
-
-# 0.1.1. General
 import os
+import subprocess
+import time
 from fnmatch import fnmatch
 from sys import path
-import time
-import subprocess
+
+import TestRecrutement_spectral_indexes as si  # NOQA
 
 """
 Create a command which allow to ask :
@@ -79,8 +75,6 @@ scripts_folder = os.path.dirname(os.path.realpath(__file__))
 scripts_folder = os.path.normcase(scripts_folder)
 path.append(scripts_folder)
 
-# 0.1.3. Import of the personal libraries
-import TestRecrutement_spectral_indexes as si  # NOQA
 
 # 0.2) INPUT/OUTPUT FOLDERS
 

@@ -47,7 +47,7 @@ def list_files(pattern: list=['*'], directory: str=None, extension: str='tif', r
             if not recurse:
                 break
 
-        # TODO add logger to list images in logs
+        # TODO replace print by a logger
         print(f"{len(images)} image(s) found")
 
         images.sort()
@@ -57,6 +57,49 @@ def list_files(pattern: list=['*'], directory: str=None, extension: str='tif', r
         print(f'error while getting files: {e}')
         return []
 
+def search_B4_B8(input_directory, img_format, recurse=True):
+    """
+    Find the B4 and B8 bands images in the input folder and depending of the image format.
+
+    Args:
+        input_directory (str): Le chemin du dossier contenant les fichiers d'entrée.
+        img_format (str): Images formats. It can be: S2-2A-ESA, S2-2A, S2-3A.
+        recurse (bool, optional): If True, search in subdirectories.
+
+    Returns:
+        dict: a dictionary that contains absolute paths of files.
+            - 'B4' : List of B4 band files.
+            - 'B8' : List of B8 band files.
+            - 'cloud_masks' : list of cloud mask.
+            - 'format' : Images's format.
+    """
+
+    res = {'B4': [], 'B8': [], 'cloud_masks': [], 'format': img_format}
+
+    if img_format == "S2-2A-ESA":
+        print("looking for S2-2A-ESA files")
+        res['B4'] = list_files(pattern=['*10m*B04*'], directory=input_directory, extension='jp2', recurse=recurse)
+        res['B8'] = list_files(pattern=['*10m*B08*'], directory=input_directory, extension='jp2', recurse=recurse)
+        res['cloud_masks'] = list_files(pattern=['*20m*CLD*'], directory=input_directory, extension='jp2', recurse=recurse)
+
+    # search bands in S2-Thiea folders
+    elif img_format == "S2-2A":
+        print("looking for S2-2A files")
+        res['B4'] = list_files(pattern=['SENTINEL2*_FRE_B4'], directory=input_directory, extension='tif', recurse=recurse)
+        res['B8'] = list_files(pattern=['SENTINEL2*_FRE_B8'], directory=input_directory, extension='tif', recurse=recurse)
+        res['cloud_masks'] = list_files(pattern=['SENTINEL2*_CLM_R1'], directory=input_directory, extension='tif', recurse=recurse)
+
+    # search bands in S2-Thiea syntheses folders
+    elif img_format == "S2-3A":
+        print("looking for S2-3Afiles")
+        res['B4'] = list_files(pattern=['SENTINEL2*_FRC_B4'], directory=input_directory, extension='tif', recurse=recurse)
+        res['B8'] = list_files(pattern=['SENTINEL2*_FRC_B8'], directory=input_directory, extension='tif', recurse=recurse)
+        res['cloud_masks'] = list_files(pattern=['SENTINEL2*_FLG_R1'], directory=input_directory, extension='tif', recurse=recurse)
+
+    else:
+        print("S2 format not recognized!")
+
+    return res
 
 ####################################################################
 #### LEGACY CODE TO BE DELETED WHEN IT WILL BE NO lONGER BE USED####

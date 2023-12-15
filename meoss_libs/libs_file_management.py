@@ -5,6 +5,57 @@ import numpy as np
 
 from osgeo import gdal
 
+def list_files(pattern: list=['*'], directory: str=None, extension: str='tif', recurse: bool=False):
+    """
+    Function to list files in a directory with a specific extension. files can be filtered with a pattern.
+    without any arguments, the function will list all .tif files in the current directory.
+
+    Args:
+        pattern (list[str], optional): pattern of the files to search. If not provided will search all .extension files
+        directory (str, optional): directory to search in, if not provided the current working directory is used.
+        extension (str, optional): extension of the files to search.
+        recurse (bool, optional): if True, search in subdirectories.
+
+    Returns:
+        list of files founds.
+
+    Exception:
+        on errors return an empty list.
+
+    Example:
+    List all '.tif' files in the current directory and its subdirectories.
+    files = list_files(recurse=True)
+
+    List all 'FRE_B8.jpg' and 'FRE_B6.jpg' files in the current directory.
+    files = list_files(pattern=['FRE_B8', 'FRE_B6'], extension='jpg')
+
+    List all '*_L2A_*_FRE_B8.tif' and '*T31TCJ_*_ATB_R?.tif' files in the current directory.
+    files = list_files(pattern=['*_L2A_*_FRE_B8', '*T31TCJ_*_ATB_R?'])
+    """
+    try:
+        images = []
+
+        if not directory:
+            directory = os.getcwd()
+
+        for dirpath, dirnames, files in os.walk(directory):
+            for name in files:
+                for pat in pattern:
+                    if extension and name.lower().endswith(extension) and fnmatch(name, f"{pat}.{extension}"):
+                        abspath = os.path.abspath(os.path.join(dirpath, name))
+                        images.append(abspath)
+            if not recurse:
+                break
+
+        # TODO add logger to list images in logs
+        print(f"{len(images)} image(s) found")
+
+        images.sort()
+        return images
+
+    except Exception as e:
+        print(f'error while getting files: {e}')
+        return []
 
 
 ####################################################################

@@ -125,54 +125,31 @@ print("Length of lst_si :", len(lst_si))
 
 os.makedirs(work_folder, exist_ok=True)
 
-# 1.1) NDVI CALCULATION
+# 1.1) NDVI CALCULATION with OTB
+for image in lst_si:
+    ndvi_image = os.path.splitext(image)[0] + '_NDVI_otb.tif'
 
-# With numpy
-if args.numpy:
-    # With personal script
-    # Allow to take into account nodata value
-    for image in lst_si:
-        ndvi_image = os.path.splitext(image)[0] + '_NDVI.tif'
+    if os.path.exists(os.path.join(work_folder, ndvi_image)):
+        print(f'File {ndvi_image} already exists, it has not been created again\n')
 
-        if os.path.exists(os.path.join(work_folder, ndvi_image)):
-            print(f'File {ndvi_image} already exists, it has not been created again\n')
-
-        else:
-            si.create_ndvi_image(image, si_folder, work_folder, ndvi_image,
-                                 nir_band=nir_band_nb, red_band=red_band_nb,
-                                 in_nodata_value=nodata_value)
-
-            if os.path.exists(os.path.join(work_folder, ndvi_image)):
-                print(f'File {ndvi_image} created\n')
-
-            else:
-                print(f'ERROR :\n {ndvi_image} not created\n')
-# With OTB
-else:
-    for image in lst_si:
-        ndvi_image = os.path.splitext(image)[0] + '_NDVI_otb.tif'
+    else:
+        nir_band = nir_band_nb + 1
+        red_band = red_band_nb + 1
+        # Define commande
+        cmd_pattern = "otbcli_RadiometricIndices -in {in_raster} -channels.nir {in_nir} -channels.red {in_r} -list {index} -out {out_raster}"
+        cmd = cmd_pattern.format(in_raster=os.path.join(si_folder, image),
+                                 in_nir=nir_band, in_r=red_band,
+                                 index='Vegetation:NDVI',
+                                 out_raster=os.path.normcase(os.path.join(work_folder, ndvi_image)))
+        # Execute command
+        result = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+        print(cmd)
+        print(result.decode())
 
         if os.path.exists(os.path.join(work_folder, ndvi_image)):
-            print(f'File {ndvi_image} already exists, it has not been created again\n')
-
+            print(f'File {ndvi_image} created\n')
         else:
-            nir_band = nir_band_nb + 1
-            red_band = red_band_nb + 1
-            # Define commande
-            cmd_pattern = "otbcli_RadiometricIndices -in {in_raster} -channels.nir {in_nir} -channels.red {in_r} -list {index} -out {out_raster}"
-            cmd = cmd_pattern.format(in_raster=os.path.join(si_folder, image),
-                                     in_nir=nir_band, in_r=red_band,
-                                     index='Vegetation:NDVI',
-                                     out_raster=os.path.normcase(os.path.join(work_folder, ndvi_image)))
-            # Execute command
-            result = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
-            print(cmd)
-            print(result.decode())
-
-            if os.path.exists(os.path.join(work_folder, ndvi_image)):
-                print(f'File {ndvi_image} created\n')
-            else:
-                print(f'ERROR :\n {ndvi_image} not created\n')
+            print(f'ERROR :\n {ndvi_image} not created\n')
 
 
 # Final time

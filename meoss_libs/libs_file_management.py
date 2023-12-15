@@ -245,3 +245,14 @@ def search_files(directory='.', extension='jp2', resolution='10m', band='B04'):
 
     print(str(len(images)) + " image(s) found")
     return images
+
+def list_files_legacy(si_folder, suffix_in_si):
+
+    lst_si = []
+    for f in os.listdir(si_folder):
+        for i in range(len(suffix_in_si)):
+            if fnmatch(f, "*{}".format(suffix_in_si[i])):
+                lst_si.append(f)
+    lst_si.sort()
+    print(len(lst_si))
+    return lst_si

@@ -229,7 +229,7 @@ def write_data_set(array, data_set=None, gdal_dtype=None, transform=None, projec
     return output_data_set
 
 
-def search_files(directory='.', extension='jp2', resolution='10m', band='B04'):
+def search_files_legacy(directory='.', extension='jp2', resolution='10m', band='B04'):
     images = []
     extension = extension.lower()
     resolution = resolution.lower()

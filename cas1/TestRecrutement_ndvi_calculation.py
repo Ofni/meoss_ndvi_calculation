@@ -40,8 +40,8 @@ def ndvi_calculation(file, nir_band_nb: int, red_band_nb: int, work_folder):
     Computation done with OTB
 
     :param file: files to analyse
-    :param nir_band_nb: position of the near infrared bands in the images (0 for the first band)
-    :param red_band_nb: position of the red bands in the images (0 for the first band)
+    :param nir_band_nb: position of the near infrared bands in the images (1 for the first band)
+    :param red_band_nb: position of the red bands in the images (1 for the first band)
     :param work_folder: working folder
     :return:
     """
@@ -51,12 +51,10 @@ def ndvi_calculation(file, nir_band_nb: int, red_band_nb: int, work_folder):
     if os.path.exists(os.path.join(work_folder, ndvi_image)):
         print(f'File {ndvi_image} already exists, it has not been created again\n')
     else:
-        nir_band = nir_band_nb + 1
-        red_band = red_band_nb + 1
         # Define commande
         cmd_pattern = "otbcli_RadiometricIndices -in {in_raster} -channels.nir {in_nir} -channels.red {in_r} -list {index} -out {out_raster}"
         cmd = cmd_pattern.format(in_raster=os.path.join(input_folder, image),
-                                 in_nir=nir_band, in_r=red_band,
+                                 in_nir=nir_band_nb, in_r=red_band_nb,
                                  index='Vegetation:NDVI',
                                  out_raster=os.path.normcase(os.path.join(work_folder, ndvi_image)))
         # Execute command
@@ -76,8 +74,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--input-directory', '-i',  dest='input_dir',      action='store', default=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'var', 'datas'), help='Input images file directory')
     parser.add_argument('--output-directory', '-o', dest='output_dir',     action='store', default=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'var', 'results'), help='Output images file directory')
-    parser.add_argument('--nir-band-nb',            dest='nir_band_nb', action='store', default=3, help='Inform the position of the near infrared bands in the images (0 for the first band)')
-    parser.add_argument('--red-band-nb',            dest='red_band_nb', action='store', default=2, help='Inform the position of the red bands in the images (0 for the first band)')
+    parser.add_argument('--nir-band-nb', '-nb',     dest='nir_band_nb', action='store', default=4, help='Inform the position of the near infrared bands in the images (1 for the first band)')
+    parser.add_argument('--red-band-nb', '-rb',     dest='red_band_nb', action='store', default=3, help='Inform the position of the red bands in the images (1 for the first band)')
     parser.add_argument('suffixes_name', type=str, nargs='+', help='Input images file suffixes (ex: _FRE_ConcatenateImageBGRPIR.tif)')
 
     args = parser.parse_args()

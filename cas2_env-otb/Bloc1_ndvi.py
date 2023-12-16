@@ -6,11 +6,19 @@ Calculating Normalized Difference Vegetation Index (NDVI) using Sentinel-2
 """
 import argparse
 import os
+from sys import path
 
 import otbApplication
 
-# meoss libs can be set to git submodule, and therefore be pull/push for other people/script independently of NVDI calculations
-from meoss_libs.libs_file_management import search_B4_B8, generate_output_file_name
+# meoss libs can be set to git submodule
+# and therefore be pull/push for other people/script independently of NVDI calculations
+from meoss_libs.libs_file_management import search_B4_B8, generate_output_file_name, list_files
+
+# Not sure to understand well the purpose of this part
+# Path to personal libraries
+scripts_folder = os.path.dirname(os.path.realpath(__file__))
+scripts_folder = os.path.normcase(scripts_folder)
+path.append(scripts_folder)
 
 
 def ndvi_calculation_band(format, red, nir, mask, out, shp):
@@ -76,7 +84,39 @@ def ndvi_calculation_band(format, red, nir, mask, out, shp):
             app3.SetParameterString("out", outfile_with_path+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES")
             app3.SetParameterInt("ram",1000)
             app3.ExecuteAndWriteOutput()
-        
+
+def ndvi_calculation_concatened(file, nir_band_nb: int, red_band_nb: int, work_folder):
+    """
+    Function to produce very high resolution vegetation maps (NDVI) from satellite images, in urban areas.
+    Computation done with OTB
+
+    :param file: files to analyse
+    :param nir_band_nb: position of the near infrared bands in the images (1 for the first band)
+    :param red_band_nb: position of the red bands in the images (1 for the first band)
+    :param work_folder: working folder
+    :return:
+    """
+
+    ndvi_image = generate_output_file_name(file, format='S2-2A', prefix='NDVI', prefix2='concatBGRPIP')
+
+    if os.path.exists(os.path.join(work_folder, ndvi_image)):
+        print(f'File {ndvi_image} already exists, it has not been created again\n')
+    else:
+        app = otbApplication.Registry.CreateApplication("RadiometricIndices")
+
+        app.SetParameterString("in", file)
+        app.SetParameterInt("channels.nir", nir_band_nb)
+        app.SetParameterInt("channels.red", red_band_nb)
+        app.SetParameterStringList("list", ['Vegetation:NDVI'])
+        app.SetParameterString("out", os.path.normcase(os.path.join(work_folder, ndvi_image)) )
+
+        app.ExecuteAndWriteOutput()
+
+        if os.path.exists(os.path.join(work_folder, ndvi_image)):
+            print(f'File {ndvi_image} created\n')
+        else:
+            print(f'ERROR :\n {ndvi_image} not created\n')
+
 
 if __name__ == "__main__":
 
@@ -107,4 +147,5 @@ if __name__ == "__main__":
             ndvi_calculation_band(args.format, red, nir, mask, args.output_dir, args.shape_directory)
 
     elif args.mode == 'concat':
-        pass
+        for image in list_files(pattern=args.suffixes_name, directory=args.input_dir, recurse=True):
+            ndvi_calculation_concatened(image, args.nir_band_nb, args.red_band_nb, args.output_dir)

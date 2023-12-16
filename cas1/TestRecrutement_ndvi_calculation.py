@@ -22,7 +22,6 @@ By : Agathe Fontaine
 
 import argparse
 import os
-import subprocess
 import time
 from sys import path
 
@@ -30,43 +29,10 @@ import otbApplication
 
 from meoss_libs.libs_file_management import list_files, generate_output_file_name
 
-# Path to personal libraries
-scripts_folder = os.path.dirname(os.path.realpath(__file__))
-scripts_folder = os.path.normcase(scripts_folder)
-path.append(scripts_folder)
 
 
-def ndvi_calculation_concatened(file, nir_band_nb: int, red_band_nb: int, work_folder):
-    """
-    Function to produce very high resolution vegetation maps (NDVI) from satellite images, in urban areas.
-    Computation done with OTB
 
-    :param file: files to analyse
-    :param nir_band_nb: position of the near infrared bands in the images (1 for the first band)
-    :param red_band_nb: position of the red bands in the images (1 for the first band)
-    :param work_folder: working folder
-    :return:
-    """
 
-    ndvi_image = generate_output_file_name(file, format='S2-2A', prefix='NDVI', prefix2='concatBGRPIP')
-
-    if os.path.exists(os.path.join(work_folder, ndvi_image)):
-        print(f'File {ndvi_image} already exists, it has not been created again\n')
-    else:
-        app = otbApplication.Registry.CreateApplication("RadiometricIndices")
-
-        app.SetParameterString("in", os.path.join(input_folder, image))
-        app.SetParameterInt("channels.nir", nir_band_nb)
-        app.SetParameterInt("channels.red", red_band_nb)
-        app.SetParameterStringList("list", ['Vegetation:NDVI'])
-        app.SetParameterString("out", os.path.normcase(os.path.join(work_folder, ndvi_image)) )
-
-        app.ExecuteAndWriteOutput()
-
-        if os.path.exists(os.path.join(work_folder, ndvi_image)):
-            print(f'File {ndvi_image} created\n')
-        else:
-            print(f'ERROR :\n {ndvi_image} not created\n')
 
 
 if __name__ == '__main__':

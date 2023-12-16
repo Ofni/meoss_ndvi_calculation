@@ -14,26 +14,30 @@ import otbApplication
 # and therefore be pull/push for other people/script independently of NVDI calculations
 from meoss_libs.libs_file_management import search_B4_B8, generate_output_file_name, list_files
 
-# Not sure to understand well the purpose of this part
+# Not sure to understand well the purpose of this part, really usefully ?
 # Path to personal libraries
 scripts_folder = os.path.dirname(os.path.realpath(__file__))
 scripts_folder = os.path.normcase(scripts_folder)
 path.append(scripts_folder)
 
 
-def ndvi_calculation_band(format, red, nir, mask, out, shp):
+def ndvi_calculation_band(img_format, nir_band_img, red_band_img, cloud_mask_img, output_directory, shape_file):
 
-    outfile = generate_output_file_name(red, format, prefix='NDVI')
-    outfile_with_path = os.path.join(out, outfile)
+    outfile = generate_output_file_name(red_band_img, img_format, prefix='NDVI')
+    outfile_with_path = os.path.join(output_directory, outfile)
 
     if os.path.exists(outfile_with_path):
         print(f'File {outfile_with_path} already exists, it has not been created again')
 
     else:
+        cloud_free_mask_value = "0"            # cloud free value in S2-2A and S2-SEN2COR masks = 0
+        if img_format == 'S2-3A':
+            cloud_free_mask_value = "4"        # cloud free value in S2-3A  = 4
+
         # the sentinel-2 from ESA (S2-SEN2COR) only provides 20 m cloud mask, this why it's necessary to do the superimpose.
         app0 = otbApplication.Registry.CreateApplication("Superimpose")
-        app0.SetParameterString("inm",mask)                             # image to reproject
-        app0.SetParameterString("inr",nir)                              # image to reference
+        app0.SetParameterString("inm",cloud_mask_img)                             # image to reproject
+        app0.SetParameterString("inr",nir_band_img)                              # image to reference
         app0.SetParameterString("out", "temp0.tif")
         app0.SetParameterOutputImagePixelType("out", otbApplication.ImagePixelType_int16)
         app0.SetParameterString("interpolator", "nn")
@@ -41,16 +45,12 @@ def ndvi_calculation_band(format, red, nir, mask, out, shp):
         app0.Execute()
 
         app1 = otbApplication.Registry.CreateApplication("BandMath")
-        app1.AddParameterStringList("il",nir)
-        app1.AddParameterStringList("il",red)
+        app1.AddParameterStringList("il",nir_band_img)
+        app1.AddParameterStringList("il",red_band_img)
         app1.SetParameterString("out", "temp1.tif")
         app1.SetParameterString("exp", "(im1b1-im2b1)/(im1b1+im2b1+1.E-6)*1000")
         app1.SetParameterInt("ram",4000)
         app1.Execute()
-
-        cloud_free_mask_value = "0"            # cloud free value in S2-2A and S2-SEN2COR masks = 0
-        if format == 'S2-3A':
-            cloud_free_mask_value = "4"        # cloud free value in S2-3A  = 4
 
         app2 = otbApplication.Registry.CreateApplication("BandMath")
         app2.AddImageToParameterInputImageList("il",app1.GetParameterOutputImage("out"))
@@ -66,15 +66,15 @@ def ndvi_calculation_band(format, red, nir, mask, out, shp):
         app3.SetParameterString("mode", "changevalue")
 
         # if shapefile is provided, it will be used to clip spectral index to the output image, else image is directly written
-        if shp:
+        if shape_file:
             app3.SetParameterString("out", "temp3.tif")
             app3.Execute()
 
-            print("...................................................................shp =", shp)
+            print("...................................................................shp =", shape_file)
             app4 = otbApplication.Registry.CreateApplication("ExtractROI")
             app4.SetParameterInputImage("in", app3.GetParameterOutputImage("out"))
             app4.SetParameterString("mode","fit")
-            app4.SetParameterString("mode.fit.vect", shp)
+            app4.SetParameterString("mode.fit.vect", shape_file)
             app4.SetParameterString("out", outfile_with_path+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES")
             app4.SetParameterOutputImagePixelType("out", otbApplication.ImagePixelType_int16)
             app4.SetParameterInt("ram",1000)
@@ -85,7 +85,8 @@ def ndvi_calculation_band(format, red, nir, mask, out, shp):
             app3.SetParameterInt("ram",1000)
             app3.ExecuteAndWriteOutput()
 
-def ndvi_calculation_concatened(file, nir_band_nb: int, red_band_nb: int, work_folder):
+
+def ndvi_calculation_concatened(file, nir_band_nb, red_band_nb, output_directory):
     """
     Function to produce very high resolution vegetation maps (NDVI) from satellite images, in urban areas.
     Computation done with OTB
@@ -93,13 +94,13 @@ def ndvi_calculation_concatened(file, nir_band_nb: int, red_band_nb: int, work_f
     :param file: files to analyse
     :param nir_band_nb: position of the near infrared bands in the images (1 for the first band)
     :param red_band_nb: position of the red bands in the images (1 for the first band)
-    :param work_folder: working folder
+    :param output_directory: working folder
     :return:
     """
 
     ndvi_image = generate_output_file_name(file, format='S2-2A', prefix='NDVI', prefix2='concatBGRPIP')
 
-    if os.path.exists(os.path.join(work_folder, ndvi_image)):
+    if os.path.exists(os.path.join(output_directory, ndvi_image)):
         print(f'File {ndvi_image} already exists, it has not been created again\n')
     else:
         app = otbApplication.Registry.CreateApplication("RadiometricIndices")
@@ -108,11 +109,11 @@ def ndvi_calculation_concatened(file, nir_band_nb: int, red_band_nb: int, work_f
         app.SetParameterInt("channels.nir", nir_band_nb)
         app.SetParameterInt("channels.red", red_band_nb)
         app.SetParameterStringList("list", ['Vegetation:NDVI'])
-        app.SetParameterString("out", os.path.normcase(os.path.join(work_folder, ndvi_image)) )
+        app.SetParameterString("out", os.path.normcase(os.path.join(output_directory, ndvi_image)))
 
         app.ExecuteAndWriteOutput()
 
-        if os.path.exists(os.path.join(work_folder, ndvi_image)):
+        if os.path.exists(os.path.join(output_directory, ndvi_image)):
             print(f'File {ndvi_image} created\n')
         else:
             print(f'ERROR :\n {ndvi_image} not created\n')
@@ -141,11 +142,11 @@ if __name__ == "__main__":
         os.makedirs(args.output_dir, exist_ok=True)
 
     if args.mode == 'band':
-        bande_files = search_B4_B8(args.input_dir, args.format)
+        band_files = search_B4_B8(args.input_dir, args.format, subfolder=True)
 
-        for red, nir, mask in zip (bande_files['B4'], bande_files['B8'], bande_files['cloud_masks']):
-            ndvi_calculation_band(args.format, red, nir, mask, args.output_dir, args.shape_directory)
+        for red, nir, mask in zip (band_files['B4'], band_files['B8'], band_files['cloud_masks']):
+            ndvi_calculation_band(args.format, nir, red, mask, args.output_dir, args.shape_directory)
 
     elif args.mode == 'concat':
-        for image in list_files(pattern=args.suffixes_name, directory=args.input_dir, recurse=True):
+        for image in list_files(pattern=args.suffixes_name, directory=args.input_dir, subfolder=True):
             ndvi_calculation_concatened(image, args.nir_band_nb, args.red_band_nb, args.output_dir)

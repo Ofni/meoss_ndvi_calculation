@@ -57,7 +57,7 @@ if __name__ == '__main__':
     os.makedirs(output_folder, exist_ok=True)
 
     # get files to analyse
-    lst_si = list_files(pattern=args.suffixes_name, directory=input_folder, recurse=True)
+    lst_si = list_files(pattern=args.suffixes_name, directory=input_folder, subfolder=True)
 
     # compute ndvi !
     for image in lst_si:

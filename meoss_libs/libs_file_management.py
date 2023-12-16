@@ -5,7 +5,7 @@ import numpy as np
 
 from osgeo import gdal
 
-def list_files(pattern: list=['*'], directory: str=None, extension: str='tif', recurse: bool=False):
+def list_files(pattern: list=['*'], directory: str=None, extension: str='tif', subfolder: bool=False):
     """
     Function to list files in a directory with a specific extension. files can be filtered with a pattern.
     without any arguments, the function will list all .tif files in the current directory.
@@ -14,7 +14,7 @@ def list_files(pattern: list=['*'], directory: str=None, extension: str='tif', r
         pattern (list[str], optional): Pattern of the files to search. If not provided will search all .extension files
         directory (str, optional): Directory to search in, if not provided the current working directory is used.
         extension (str, optional): Extension of the files to search.
-        recurse (bool, optional): If True, search in subdirectories.
+        subfolder (bool, optional): If True, search in subdirectories.
 
     Returns:
         list: List of found files.
@@ -24,7 +24,7 @@ def list_files(pattern: list=['*'], directory: str=None, extension: str='tif', r
 
     Examples:
         List all '.tif' files in the current directory and its subdirectories.
-        >>> files = list_files(recurse=True)
+        >>> files = list_files(subfolder=True)
 
         List all 'FRE_B8.jpg' and 'FRE_B6.jpg' files in the current directory.
         >>> files = list_files(pattern=['FRE_B8', 'FRE_B6'], extension='jpg')
@@ -44,11 +44,11 @@ def list_files(pattern: list=['*'], directory: str=None, extension: str='tif', r
                     if extension and name.lower().endswith(extension) and fnmatch(name, f"{pat}.{extension}"):
                         abspath = os.path.abspath(os.path.join(dirpath, name))
                         images.append(abspath)
-            if not recurse:
+            if not subfolder:
                 break
 
         # TODO replace print by a logger
-        print(f"{len(images)} image(s) found")
+        print(f"{len(images)} image(s) found that match {pat}.{extension} pattern in {directory}")
 
         images.sort()
         return images
@@ -58,14 +58,14 @@ def list_files(pattern: list=['*'], directory: str=None, extension: str='tif', r
         return []
 
 
-def search_B4_B8(input_directory, img_format, recurse=True):
+def search_B4_B8(input_directory, img_format, subfolder=True):
     """
     Find the B4 and B8 bands images in the input folder and depending of the image format.
 
     Args:
         input_directory (str): Le chemin du dossier contenant les fichiers d'entrée.
         img_format (str): Images formats. It can be: S2-2A-ESA, S2-2A, S2-3A.
-        recurse (bool, optional): If True, search in subdirectories.
+        subfolder (bool, optional): If True, search in subdirectories.
 
     Returns:
         dict: a dictionary that contains absolute paths of files.
@@ -79,23 +79,23 @@ def search_B4_B8(input_directory, img_format, recurse=True):
 
     if img_format == "S2-2A-ESA":
         print("looking for S2-2A-ESA files")
-        res['B4'] = list_files(pattern=['*10m*B04*'], directory=input_directory, extension='jp2', recurse=recurse)
-        res['B8'] = list_files(pattern=['*10m*B08*'], directory=input_directory, extension='jp2', recurse=recurse)
-        res['cloud_masks'] = list_files(pattern=['*20m*CLD*'], directory=input_directory, extension='jp2', recurse=recurse)
+        res['B4'] = list_files(pattern=['*10m*B04*'], directory=input_directory, extension='jp2', subfolder=subfolder)
+        res['B8'] = list_files(pattern=['*10m*B08*'], directory=input_directory, extension='jp2', subfolder=subfolder)
+        res['cloud_masks'] = list_files(pattern=['*20m*CLD*'], directory=input_directory, extension='jp2', subfolder=subfolder)
 
     # search bands in S2-Thiea folders
     elif img_format == "S2-2A":
         print("looking for S2-2A files")
-        res['B4'] = list_files(pattern=['SENTINEL2*_FRE_B4'], directory=input_directory, extension='tif', recurse=recurse)
-        res['B8'] = list_files(pattern=['SENTINEL2*_FRE_B8'], directory=input_directory, extension='tif', recurse=recurse)
-        res['cloud_masks'] = list_files(pattern=['SENTINEL2*_CLM_R1'], directory=input_directory, extension='tif', recurse=recurse)
+        res['B4'] = list_files(pattern=['SENTINEL2*_FRE_B4'], directory=input_directory, extension='tif', subfolder=subfolder)
+        res['B8'] = list_files(pattern=['SENTINEL2*_FRE_B8'], directory=input_directory, extension='tif', subfolder=subfolder)
+        res['cloud_masks'] = list_files(pattern=['SENTINEL2*_CLM_R1'], directory=input_directory, extension='tif', subfolder=subfolder)
 
     # search bands in S2-Thiea syntheses folders
     elif img_format == "S2-3A":
         print("looking for S2-3Afiles")
-        res['B4'] = list_files(pattern=['SENTINEL2*_FRC_B4'], directory=input_directory, extension='tif', recurse=recurse)
-        res['B8'] = list_files(pattern=['SENTINEL2*_FRC_B8'], directory=input_directory, extension='tif', recurse=recurse)
-        res['cloud_masks'] = list_files(pattern=['SENTINEL2*_FLG_R1'], directory=input_directory, extension='tif', recurse=recurse)
+        res['B4'] = list_files(pattern=['SENTINEL2*_FRC_B4'], directory=input_directory, extension='tif', subfolder=subfolder)
+        res['B8'] = list_files(pattern=['SENTINEL2*_FRC_B8'], directory=input_directory, extension='tif', subfolder=subfolder)
+        res['cloud_masks'] = list_files(pattern=['SENTINEL2*_FLG_R1'], directory=input_directory, extension='tif', subfolder=subfolder)
 
     else:
         print("S2 format not recognized!")

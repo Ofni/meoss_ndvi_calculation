@@ -22,6 +22,21 @@ path.append(scripts_folder)
 
 
 def ndvi_calculation_band(img_format, nir_band_img, red_band_img, cloud_mask_img, output_directory, shape_file):
+    """
+    Function to produce very high resolution vegetation maps (NDVI) from satellite images, in urban areas.
+    Computation done with OTB and use B4 and B8 bands
+
+    Args:
+        img_format: Images formats. It can be: S2-2A-ESA, S2-2A, S2-3A.
+        nir_band_img: Absolute path to the near infrared band image.
+        red_band_img: Absolute path to the red band image.
+        cloud_mask_img: Absolute path to the cloud mask image.
+        output_directory: Absolute path to the output directory.
+        shape_file: Absolute path to the shape file to clip the output computed index.
+
+    Returns:
+        None. The NDVI image is written in the output directory
+    """
     try:
 
         outfile = generate_output_file_name(red_band_img, img_format, prefix='NDVI')
@@ -98,13 +113,16 @@ def ndvi_calculation_band(img_format, nir_band_img, red_band_img, cloud_mask_img
 def ndvi_calculation_concatenated(file, nir_band_nb, red_band_nb, output_directory):
     """
     Function to produce very high resolution vegetation maps (NDVI) from satellite images, in urban areas.
-    Computation done with OTB
+    Computation done with OTB and BGRPIP concatenated image
 
-    :param file: files to analyse
-    :param nir_band_nb: position of the near infrared bands in the images (1 for the first band)
-    :param red_band_nb: position of the red bands in the images (1 for the first band)
-    :param output_directory: working folder
-    :return:
+    Args:
+        file: Absolute path to the concatenated image.
+        nir_band_nb: Position of the near infrared bands in the images (1 for the first band).
+        red_band_nb: Position of the red bands in the images (1 for the first band).
+        output_directory: Absolute path to the output directory.
+
+    Returns:
+        None. The NDVI image is written in the output directory
     """
     try:
         outfile = generate_output_file_name(file, format='S2-2A', prefix='NDVI', prefix2='concatBGRPIP')

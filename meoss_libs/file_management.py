@@ -12,16 +12,16 @@ def list_files(pattern=['*'], directory=None, extension='tif', subfolder=False):
     without any arguments, the function will list all .tif files in the current directory.
 
     Args:
-        pattern (list[str], optional): Pattern of the files to search. If not provided will search all .extension files
+        pattern (list[str], optional): Pattern (unix style) of the files to search. If not provided will search all .extension files
         directory (str, optional): Directory to search in, if not provided the current working directory is used.
-        extension (str, optional): Extension of the files to search.
+        extension (str, optional): Extension of the files to search. default extension is 'tif'.
         subfolder (bool, optional): If True, search in subdirectories.
 
     Returns:
-        list: List of found files.
+        list: List of found files (with theire full path).
 
-    Raises:
-        Exception: On any errors return an empty list.
+    Exception:
+        On any errors return an empty list.
 
     Examples:
         List all '.tif' files in the current directory and its subdirectories.
@@ -61,12 +61,12 @@ def list_files(pattern=['*'], directory=None, extension='tif', subfolder=False):
 
 def search_B4_B8(input_directory, img_format, subfolder=True):
     """
-    Find the B4 and B8 bands images in the input folder and depending of the image format.
+    Find the B4 and B8 bands images in the input directory and depending on the image format.
 
     Args:
-        input_directory (str): Le chemin du dossier contenant les fichiers d'entrée.
+        input_directory (str): the directory path in which looking for.
         img_format (str): Images formats. It can be: S2-2A-ESA, S2-2A, S2-3A.
-        subfolder (bool, optional): If True, search in subdirectories.
+        subfolder (bool, optional): If True, search in subdirectories. Default is True
 
     Returns:
         dict: a dictionary that contains absolute paths of files.
@@ -106,25 +106,30 @@ def search_B4_B8(input_directory, img_format, subfolder=True):
 
 def generate_output_file_name(file, format, prefix='', prefix2='', suffix=''):
     """
-    Generates the output file name based on the input file, provided format, prefixes, and suffix.
+    Generates the output file name based on : the input file name, provided format, prefixes, and suffix.
 
     Args:
-        file (str): The filen name on which name is generated.
+        file (str): The input file name from which is generated the output name.
         format (str): The format of the input file. Can be "S2-2A-ESA", "S2-2A" or "S2-3A".
         prefix (str, optional): The prefix to add to the output file name. Defaults to ''.
         prefix2 (str, optional): A second prefix to add to the output file name. Defaults to ''.
         suffix (str, optional): The suffix to add to the output file name. Defaults to ''.
 
     Returns:
-        str: The output file name.
+        str: The output file name. If format is not found return filename with .no_format extension.
 
-    Raises:
-        Exception: In case of error, the function returns the input file name with ".error" extension.
+    Exception:
+        On any errors, the function returns the input file name with ".error" extension.
 
     Examples:
         >>> generate_output_file_name('/var/data/SENTINEL2A_20231012-105856-398_L2A_T31TCJ_D_V3-1.tif', format='S2-A2', prefix='NDVI')
         will return NDVI_T31TCJ_20231012T105856.tif
 
+        >>> generate_output_file_name('/var/data/SENTINEL2A_20231012-105856-398_L2A_T31TCJ_D_V3-1.tif', format='S2-A2', prefix='NDVI', prefix2='prefix2', suffix='suffix')
+        will return NDVI_prefix2_T31TCJ_20231012T105856_suffix.tif
+
+        >>> generate_output_file_name('/var/data/SENTINEL2A_20231012-105856-398_L2A_T31TCJ_D_V3-1.tif', format='unknown', prefix='NDVI')
+        will return SENTINEL2A_20231012-105856-398_L2A_T31TCJ_D_V3-1.tif.no_format
     """
     try:
         file = os.path.basename(file)

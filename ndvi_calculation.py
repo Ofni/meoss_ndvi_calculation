@@ -12,7 +12,7 @@ import otbApplication
 
 #  meoss_libs can be set to git submodule
 # and therefore be pull/push for other people/script independently of NVDI calculations
-from meoss_libs.libs_file_management import search_B4_B8, generate_output_file_name, list_files
+from meoss_libs.file_management import search_B4_B8, generate_output_file_name, list_files
 
 # Not sure to understand well the purpose of this part, really usefully ?
 # Path to personal libraries

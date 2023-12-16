@@ -27,7 +27,7 @@ from sys import path
 
 import otbApplication
 
-from meoss_libs.libs_file_management import list_files, generate_output_file_name
+from meoss_libs.file_management import list_files, generate_output_file_name
 
 
 

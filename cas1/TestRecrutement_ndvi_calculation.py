@@ -48,7 +48,7 @@ def ndvi_calculation_concatened(file, nir_band_nb: int, red_band_nb: int, work_f
     :return:
     """
 
-    ndvi_image = os.path.splitext(image)[0] + '_NDVI_otb.tif'
+    ndvi_image = generate_output_file_name(file, format='S2-2A', prefix='NDVI', prefix2='concatBGRPIP')
 
     if os.path.exists(os.path.join(work_folder, ndvi_image)):
         print(f'File {ndvi_image} already exists, it has not been created again\n')
@@ -90,8 +90,8 @@ if __name__ == '__main__':
     output_folder = os.path.normcase(args.output_dir)
     os.makedirs(output_folder, exist_ok=True)
 
-    # get file to analyse
-    lst_si = list_files_legacy(input_folder, args.suffixes_name)
+    # get files to analyse
+    lst_si = list_files(pattern=args.suffixes_name, directory=input_folder, recurse=True)
 
     # compute ndvi !
     for image in lst_si:

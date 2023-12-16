@@ -57,6 +57,7 @@ def list_files(pattern: list=['*'], directory: str=None, extension: str='tif', r
         print(f'error while getting files: {e}')
         return []
 
+
 def search_B4_B8(input_directory, img_format, recurse=True):
     """
     Find the B4 and B8 bands images in the input folder and depending of the image format.
@@ -100,6 +101,58 @@ def search_B4_B8(input_directory, img_format, recurse=True):
         print("S2 format not recognized!")
 
     return res
+
+
+def generate_output_file_name(file, format, prefix='', prefix2='', suffix=''):
+    """
+    Generates the output file name based on the input file, provided format, prefixes, and suffix.
+
+    Args:
+        file (str): The filen name on which name is generated.
+        format (str): The format of the input file. Can be "S2-2A-ESA", "S2-2A" or "S2-3A".
+        prefix (str, optional): The prefix to add to the output file name. Defaults to ''.
+        prefix2 (str, optional): A second prefix to add to the output file name. Defaults to ''.
+        suffix (str, optional): The suffix to add to the output file name. Defaults to ''.
+
+    Returns:
+        str: The output file name.
+
+    Raises:
+        Exception: In case of error, the function returns the input file name with ".error" extension.
+
+    Examples:
+        >>> generate_output_file_name('/var/data/SENTINEL2A_20231012-105856-398_L2A_T31TCJ_D_V3-1.tif', format='S2-A2', prefix='NDVI')
+        will return NDVI_T31TCJ_20231012T105856.tif
+
+    """
+    try:
+        file = os.path.basename(file)
+        extension = os.path.splitext(file)[1]
+        splitname = file.split('_')
+
+        if prefix:
+            prefix = f"{prefix}_"
+        if prefix2:
+            prefix2 = f"{prefix2}_"
+        if suffix:
+            suffix = f"_{suffix}"
+
+        if format in ["S2-2A-ESA"]:
+            outfile = prefix + prefix2 + splitname[0] + '_' + splitname[1] + suffix + extension # index name if format esa
+        elif format in ["S2-2A", "S2-3A"]:
+            outfile = prefix + prefix2 + splitname[3] + '_' + splitname[1].split('-')[0] + 'T' + splitname[1].split('-')[1] + suffix + extension  # index name if format thiea
+        else:
+            # Todo move print in log
+            print("format not found, generated output file as file.no_format.extension")
+            outfile = file + '.no_format'
+
+    except Exception as e:
+        # Todo move print in log
+        print(f"error while formatting output filename : {e}")
+        outfile = file + '.error'
+
+    return outfile
+
 
 ####################################################################
 #### LEGACY CODE TO BE DELETED WHEN IT WILL BE NO lONGER BE USED####

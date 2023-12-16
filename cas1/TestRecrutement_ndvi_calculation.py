@@ -26,7 +26,9 @@ import subprocess
 import time
 from sys import path
 
-from meoss_libs.libs_file_management import list_files_legacy
+import otbApplication
+
+from meoss_libs.libs_file_management import list_files, generate_output_file_name
 
 # Path to personal libraries
 scripts_folder = os.path.dirname(os.path.realpath(__file__))
@@ -34,7 +36,7 @@ scripts_folder = os.path.normcase(scripts_folder)
 path.append(scripts_folder)
 
 
-def ndvi_calculation(file, nir_band_nb: int, red_band_nb: int, work_folder):
+def ndvi_calculation_concatened(file, nir_band_nb: int, red_band_nb: int, work_folder):
     """
     Function to produce very high resolution vegetation maps (NDVI) from satellite images, in urban areas.
     Computation done with OTB
@@ -51,16 +53,15 @@ def ndvi_calculation(file, nir_band_nb: int, red_band_nb: int, work_folder):
     if os.path.exists(os.path.join(work_folder, ndvi_image)):
         print(f'File {ndvi_image} already exists, it has not been created again\n')
     else:
-        # Define commande
-        cmd_pattern = "otbcli_RadiometricIndices -in {in_raster} -channels.nir {in_nir} -channels.red {in_r} -list {index} -out {out_raster}"
-        cmd = cmd_pattern.format(in_raster=os.path.join(input_folder, image),
-                                 in_nir=nir_band_nb, in_r=red_band_nb,
-                                 index='Vegetation:NDVI',
-                                 out_raster=os.path.normcase(os.path.join(work_folder, ndvi_image)))
-        # Execute command
-        result = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
-        print(cmd)
-        print(result.decode())
+        app = otbApplication.Registry.CreateApplication("RadiometricIndices")
+
+        app.SetParameterString("in", os.path.join(input_folder, image))
+        app.SetParameterInt("channels.nir", nir_band_nb)
+        app.SetParameterInt("channels.red", red_band_nb)
+        app.SetParameterStringList("list", ['Vegetation:NDVI'])
+        app.SetParameterString("out", os.path.normcase(os.path.join(work_folder, ndvi_image)) )
+
+        app.ExecuteAndWriteOutput()
 
         if os.path.exists(os.path.join(work_folder, ndvi_image)):
             print(f'File {ndvi_image} created\n')
@@ -94,7 +95,7 @@ if __name__ == '__main__':
 
     # compute ndvi !
     for image in lst_si:
-        ndvi_calculation(image, args.nir_band_nb, args.red_band_nb, output_folder)
+        ndvi_calculation_concatened(image, args.nir_band_nb, args.red_band_nb, output_folder)
 
     elapsed_time = time.time() - start_time
     m, s = divmod(elapsed_time, 60)

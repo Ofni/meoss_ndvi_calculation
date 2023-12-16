@@ -10,7 +10,7 @@ from sys import path
 
 import otbApplication
 
-#  meoss_libs can be set to git submodule
+# meoss_libs can be set to git submodule
 # and therefore be pull/push for other people/script independently of NVDI calculations
 from meoss_libs.file_management import search_B4_B8, generate_output_file_name, list_files
 
@@ -23,8 +23,11 @@ path.append(scripts_folder)
 
 def ndvi_calculation_band(img_format, nir_band_img, red_band_img, cloud_mask_img, output_directory, shape_file):
     try:
+
         outfile = generate_output_file_name(red_band_img, img_format, prefix='NDVI')
         outfile_with_path = os.path.join(output_directory, outfile)
+
+        print(f"generate ndvi image with band images in {outfile_with_path}")
 
         if os.path.exists(outfile_with_path):
             print(f'File {outfile_with_path} already exists, it has not been created again')
@@ -92,7 +95,7 @@ def ndvi_calculation_band(img_format, nir_band_img, red_band_img, cloud_mask_img
         print(f"error while generating NDVi image: {e}")
 
 
-def ndvi_calculation_concatened(file, nir_band_nb, red_band_nb, output_directory):
+def ndvi_calculation_concatenated(file, nir_band_nb, red_band_nb, output_directory):
     """
     Function to produce very high resolution vegetation maps (NDVI) from satellite images, in urban areas.
     Computation done with OTB
@@ -106,6 +109,8 @@ def ndvi_calculation_concatened(file, nir_band_nb, red_band_nb, output_directory
     try:
         outfile = generate_output_file_name(file, format='S2-2A', prefix='NDVI', prefix2='concatBGRPIP')
         outfile_with_path = os.path.join(output_directory, outfile)
+
+        print(f"generate ndvi image with concatenated images in {outfile_with_path}")
 
         if os.path.exists(os.path.join(output_directory, outfile)):
             print(f'File {outfile} already exists, it has not been created again\n')
@@ -157,4 +162,4 @@ if __name__ == "__main__":
 
     elif args.mode == 'concat':
         for image in list_files(pattern=args.suffixes_name, directory=args.input_dir, subfolder=True):
-            ndvi_calculation_concatened(image, args.nir_band_nb, args.red_band_nb, args.output_dir)
+            ndvi_calculation_concatenated(image, args.nir_band_nb, args.red_band_nb, args.output_dir)

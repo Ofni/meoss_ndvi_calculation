@@ -24,21 +24,23 @@ to another range
 Simplified on Wednesday October 25 2023 for a recruitment test
 By : Agathe Fontaine
 """
-# Libraries import
-
-import numpy as np
 from osgeo import gdal
 from os.path import join, normcase
 from sys import path
+
+import numpy as np
+
+import file_management
 
 # Path to personal libraries
 scripts_folder = '/media/tech/Recrutement_test_dev/cas1_env-afo/'
 scripts_folder = normcase(scripts_folder)
 path.append(scripts_folder)
-# Personal libraries
-import TestRecrutement_read_and_write as rw # NOQA
 
-# Rescale values
+
+#################################################
+# CODE NOT MODIFIED AS NOT IN SCOPE OF THE TEST #
+#################################################
 
 
 def f_rescale(in_array, range1, range2):
@@ -132,7 +134,7 @@ def create_ndvi_image(image, images_folder, work_folder, ndvi_filename,
 
     # Opening with GDAL
     # dataset = gdal.Open(normcase(join(images_folder,image)))
-    dataset = rw.open_image(normcase(join(images_folder, image)))
+    dataset = file_management.open_image(normcase(join(images_folder, image)))
 
     # Read each band as an array and convert to float for calculations
     # Application of the No Data mask if necessary
@@ -160,7 +162,7 @@ def create_ndvi_image(image, images_folder, work_folder, ndvi_filename,
         ndvi[mask_nodata] = out_nodata_value
 
     # Write image
-    rw.write_image(normcase(join(work_folder, ndvi_filename)), ndvi, data_set=dataset,
+    file_management.write_image(normcase(join(work_folder, ndvi_filename)), ndvi, data_set=dataset,
                    gdal_dtype=gdal_dtype, transform=None, projection=None,
                    driver_name=None, nb_col=None, nb_ligne=None, nb_band=1,
                    nodata=out_nodata_value)

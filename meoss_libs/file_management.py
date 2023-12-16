@@ -5,7 +5,8 @@ import numpy as np
 
 from osgeo import gdal
 
-def list_files(pattern: list=['*'], directory: str=None, extension: str='tif', subfolder: bool=False):
+
+def list_files(pattern=['*'], directory=None, extension='tif', subfolder=False):
     """
     Function to list files in a directory with a specific extension. files can be filtered with a pattern.
     without any arguments, the function will list all .tif files in the current directory.
@@ -48,7 +49,7 @@ def list_files(pattern: list=['*'], directory: str=None, extension: str='tif', s
                 break
 
         # TODO replace print by a logger
-        print(f"{len(images)} image(s) found that match {pat}.{extension} pattern in {directory}")
+        print(f"{len(images)} image(s) found that match {pattern} .{extension} pattern in {directory}")
 
         images.sort()
         return images
@@ -138,7 +139,7 @@ def generate_output_file_name(file, format, prefix='', prefix2='', suffix=''):
             suffix = f"_{suffix}"
 
         if format in ["S2-2A-ESA"]:
-            outfile = prefix + prefix2 + splitname[0] + '_' + splitname[1] + suffix + extension # index name if format esa
+            outfile = prefix + prefix2 + splitname[0] + '_' + splitname[1] + suffix + extension  # index name if format esa
         elif format in ["S2-2A", "S2-3A"]:
             outfile = prefix + prefix2 + splitname[3] + '_' + splitname[1].split('-')[0] + 'T' + splitname[1].split('-')[1] + suffix + extension  # index name if format thiea
         else:
@@ -154,12 +155,11 @@ def generate_output_file_name(file, format, prefix='', prefix2='', suffix=''):
     return outfile
 
 
+
+
 ####################################################################
-#### LEGACY CODE TO BE DELETED WHEN IT WILL BE NO lONGER BE USED####
+####   LEGACY CODE TO BE DELETED IF NO lONGER BE USED    ###########
 ####################################################################
-
-
-
 def open_image(filename, verbose=False):
     """
     Open an image file with gdal
@@ -341,6 +341,7 @@ def search_files_legacy(directory='.', extension='jp2', resolution='10m', band='
 
     print(str(len(images)) + " image(s) found")
     return images
+
 
 def list_files_legacy(si_folder, suffix_in_si):
 

@@ -1,10 +1,7 @@
 #!/usr/bin/python
 
-"""
-This code was created by Ghaith AMIN, PhD at CESBIO/MEOSS
-Calculating Normalized Difference Vegetation Index (NDVI) using Sentinel-2
-"""
 import argparse
+import logging
 import os
 from sys import path
 
@@ -19,6 +16,18 @@ from meoss_libs.file_management import search_B4_B8, generate_output_file_name, 
 scripts_folder = os.path.dirname(os.path.realpath(__file__))
 scripts_folder = os.path.normcase(scripts_folder)
 path.append(scripts_folder)
+
+# create logger
+logger = logging.getLogger('NDVI calculation')
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s (%(levelname)s) %(name)s(l%(lineno)d): %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+
+# set logger level
+logging.getLogger('NDVI calculation').setLevel(logging.DEBUG)
+logging.getLogger('FILE MANAGEMENT').setLevel(logging.DEBUG)
 
 
 def ndvi_calculation_band(img_format, nir_band_img, red_band_img, cloud_mask_img, output_directory, shape_file):
@@ -38,14 +47,14 @@ def ndvi_calculation_band(img_format, nir_band_img, red_band_img, cloud_mask_img
         None. The NDVI image is written in the output directory
     """
     try:
+        logger.info(f"generate ndvi image with B4 B8 band images")
+        logger.debug(f"files used : format: {img_format}, nir image: {nir_band_img}, red image: {red_band_img}, cloud image: {cloud_mask_img}, output dir: {output_directory}, shape file : {shape_file}")
 
         outfile = generate_output_file_name(red_band_img, img_format, prefix='NDVI')
         outfile_with_path = os.path.join(output_directory, outfile)
 
-        print(f"generate ndvi image with band images in {outfile_with_path}")
-
         if os.path.exists(outfile_with_path):
-            print(f'File {outfile_with_path} already exists, it has not been created again')
+            logger.warning(f'File {outfile_with_path} already exists, it has not been created again')
 
         else:
             cloud_free_mask_value = "0"            # cloud free value in S2-2A and S2-SEN2COR masks = 0
@@ -89,7 +98,7 @@ def ndvi_calculation_band(img_format, nir_band_img, red_band_img, cloud_mask_img
                 app3.Execute()
 
                 # Todo replace by logger
-                print(f"shape file used: {shape_file}")
+                logger.info(f"shape file used: {shape_file}")
                 app4 = otbApplication.Registry.CreateApplication("ExtractROI")
                 app4.SetParameterInputImage("in", app3.GetParameterOutputImage("out"))
                 app4.SetParameterString("mode", "fit")
@@ -104,10 +113,10 @@ def ndvi_calculation_band(img_format, nir_band_img, red_band_img, cloud_mask_img
                 app3.SetParameterInt("ram", 1000)
                 app3.ExecuteAndWriteOutput()
 
-            print(f'NDVI File created: {outfile_with_path}')
+            logger.info(f'NDVI File created: {outfile_with_path}')
 
     except Exception as e:
-        print(f"error while generating NDVi image: {e}")
+        logger.error(f"error while generating NDVI image: {e}")
 
 
 def ndvi_calculation_concatenated(file, nir_band_nb, red_band_nb, output_directory):
@@ -125,13 +134,14 @@ def ndvi_calculation_concatenated(file, nir_band_nb, red_band_nb, output_directo
         None. The NDVI image is written in the output directory
     """
     try:
+        logger.info(f"generate ndvi image with concatenated images in {file}")
+        logger.debug(f"files used : file: {file}, nir nb: {nir_band_nb}, red nb: {nir_band_nb}, output dir: {output_directory}")
+
         outfile = generate_output_file_name(file, format='S2-2A', prefix='NDVI', prefix2='concatBGRPIP')
         outfile_with_path = os.path.join(output_directory, outfile)
 
-        print(f"generate ndvi image with concatenated images in {outfile_with_path}")
-
         if os.path.exists(os.path.join(output_directory, outfile)):
-            print(f'File {outfile} already exists, it has not been created again\n')
+            logger.warning(f'File {outfile_with_path} already exists, it has not been created again')
 
         else:
             app = otbApplication.Registry.CreateApplication("RadiometricIndices")
@@ -144,10 +154,10 @@ def ndvi_calculation_concatenated(file, nir_band_nb, red_band_nb, output_directo
 
             app.ExecuteAndWriteOutput()
 
-            print(f'NDVI File created: {outfile_with_path}')
+            logger.info(f'NDVI File created: {outfile_with_path}')
 
     except Exception as e:
-        print(f"error while generating NDVi image: {e}")
+        logger.error(f"error while generating NDVI image: {e}")
 
 
 if __name__ == "__main__":
@@ -168,6 +178,8 @@ if __name__ == "__main__":
     parser_band.add_argument('--shapefile-directory', '-shpdir', required=False, dest='shape_directory', help=' [Optional] shapefile (must have same CRS as input image) to clip the output computed index')
 
     args = parser.parse_args()
+
+    # TODO: depending on the needs, but all needed arguments could be moved to a configuration file instead of being passed as arguments each time
 
     if not os.path.isdir(args.output_dir):
         os.makedirs(args.output_dir, exist_ok=True)

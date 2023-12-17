@@ -1,9 +1,18 @@
+import logging
 import os
 from fnmatch import fnmatch
 
 import numpy as np
 
 from osgeo import gdal
+
+logger = logging.getLogger('FILE MANAGEMENT')
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s (%(levelname)s) %(name)s(l%(lineno)d): %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 
 def list_files(pattern=['*'], directory=None, extension='tif', subfolder=False):
@@ -13,7 +22,7 @@ def list_files(pattern=['*'], directory=None, extension='tif', subfolder=False):
 
     Args:
         pattern (list[str], optional): Pattern (unix style) of the files to search. If not provided will search all .extension files
-        directory (str, optional): Directory to search in, if not provided the current working directory is used.
+        directory (str, optional): Directory path to search in, if not provided the current working directory is used.
         extension (str, optional): Extension of the files to search. default extension is 'tif'.
         subfolder (bool, optional): If True, search in subdirectories.
 
@@ -48,8 +57,7 @@ def list_files(pattern=['*'], directory=None, extension='tif', subfolder=False):
             if not subfolder:
                 break
 
-        # TODO replace print by a logger
-        print(f"{len(images)} image(s) found that match {pattern} .{extension} pattern in {directory}")
+        logger.debug(f"{len(images)} image(s) found that match {pattern} .{extension} pattern in {directory}")
 
         images.sort()
         return images
@@ -78,28 +86,32 @@ def search_B4_B8(input_directory, img_format, subfolder=True):
 
     res = {'B4': [], 'B8': [], 'cloud_masks': [], 'format': img_format}
 
+    logger.debug(f"searching B4 and B8 bands in {input_directory} with format {img_format}")
+
     if img_format == "S2-2A-ESA":
-        print("looking for S2-2A-ESA files")
+        logger.info("looking for S2-2A-ESA files")
         res['B4'] = list_files(pattern=['*10m*B04*'], directory=input_directory, extension='jp2', subfolder=subfolder)
         res['B8'] = list_files(pattern=['*10m*B08*'], directory=input_directory, extension='jp2', subfolder=subfolder)
         res['cloud_masks'] = list_files(pattern=['*20m*CLD*'], directory=input_directory, extension='jp2', subfolder=subfolder)
 
     # search bands in S2-Thiea folders
     elif img_format == "S2-2A":
-        print("looking for S2-2A files")
+        logger.info("looking for S2-2A files")
         res['B4'] = list_files(pattern=['SENTINEL2*_FRE_B4'], directory=input_directory, extension='tif', subfolder=subfolder)
         res['B8'] = list_files(pattern=['SENTINEL2*_FRE_B8'], directory=input_directory, extension='tif', subfolder=subfolder)
         res['cloud_masks'] = list_files(pattern=['SENTINEL2*_CLM_R1'], directory=input_directory, extension='tif', subfolder=subfolder)
 
     # search bands in S2-Thiea syntheses folders
     elif img_format == "S2-3A":
-        print("looking for S2-3Afiles")
+        logger.info("looking for S2-3A files")
         res['B4'] = list_files(pattern=['SENTINEL2*_FRC_B4'], directory=input_directory, extension='tif', subfolder=subfolder)
         res['B8'] = list_files(pattern=['SENTINEL2*_FRC_B8'], directory=input_directory, extension='tif', subfolder=subfolder)
         res['cloud_masks'] = list_files(pattern=['SENTINEL2*_FLG_R1'], directory=input_directory, extension='tif', subfolder=subfolder)
 
     else:
-        print("S2 format not recognized!")
+        logger.warning("S2 format not recognized!")
+
+    logger.debug(f"B4 and B8 files found : {res}")
 
     return res
 
@@ -109,7 +121,7 @@ def generate_output_file_name(file, format, prefix='', prefix2='', suffix=''):
     Generates the output file name based on : the input file name, provided format, prefixes, and suffix.
 
     Args:
-        file (str): The input file name from which is generated the output name.
+        file (str): The input file name from which is generated the output name (with path or not).
         format (str): The format of the input file. Can be "S2-2A-ESA", "S2-2A" or "S2-3A".
         prefix (str, optional): The prefix to add to the output file name. Defaults to ''.
         prefix2 (str, optional): A second prefix to add to the output file name. Defaults to ''.
@@ -148,14 +160,13 @@ def generate_output_file_name(file, format, prefix='', prefix2='', suffix=''):
         elif format in ["S2-2A", "S2-3A"]:
             outfile = prefix + prefix2 + splitname[3] + '_' + splitname[1].split('-')[0] + 'T' + splitname[1].split('-')[1] + suffix + extension  # index name if format thiea
         else:
-            # Todo move print in log
-            print("format not found, generated output file as file.no_format.extension")
-            outfile = file + '.no_format'
+            outfile = f"{os.path.splitext(file)[0]}.no_format{os.path.splitext(file)[1]}"
+            logger.warning(f"format not found, generated output file as {outfile}")
 
     except Exception as e:
-        # Todo move print in log
-        print(f"error while formatting output filename : {e}")
-        outfile = file + '.error'
+        outfile = f"{os.path.splitext(file)[0]}.error{os.path.splitext(file)[1]}"
+        logger.error(f"error while formatting output filename : {e}")
+        logger.error(f"generated output file as {outfile}")
 
     return outfile
 

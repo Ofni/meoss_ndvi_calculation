@@ -10,6 +10,7 @@ import otbApplication
 # meoss_libs can be set to git submodule
 # and therefore be pull/push for other people/script independently of NVDI calculations
 from meoss_libs.file_management import search_B4_B8, generate_output_file_name, list_files
+from meoss_libs.otb import bandmath_otb, superimpose_otb, managenodata_otb, extract_ROI_otb, radiometric_indices_otb
 
 # Not sure to understand well the purpose of this part, really usefully ?
 # Path to personal libraries
@@ -26,8 +27,8 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # set logger level
-logging.getLogger('NDVI calculation').setLevel(logging.DEBUG)
-logging.getLogger('FILE MANAGEMENT').setLevel(logging.DEBUG)
+logging.getLogger('NDVI calculation').setLevel(logging.INFO)
+logging.getLogger('FILE MANAGEMENT').setLevel(logging.INFO)
 
 
 def ndvi_calculation_band(img_format, nir_band_img, red_band_img, cloud_mask_img, output_directory, shape_file):
@@ -62,56 +63,19 @@ def ndvi_calculation_band(img_format, nir_band_img, red_band_img, cloud_mask_img
                 cloud_free_mask_value = "4"        # cloud free value in S2-3A  = 4
 
             # the sentinel-2 from ESA (S2-SEN2COR) only provides 20 m cloud mask, this why it's necessary to do superimpose.
-            app0 = otbApplication.Registry.CreateApplication("Superimpose")
-            app0.SetParameterString("inm", cloud_mask_img)                             # image to reproject
-            app0.SetParameterString("inr", nir_band_img)                              # image to reference
-            app0.SetParameterString("out", "temp0.tif")
-            app0.SetParameterOutputImagePixelType("out", otbApplication.ImagePixelType_int16)
-            app0.SetParameterString("interpolator", "nn")
-            app0.SetParameterInt("ram", 4000)
-            app0.Execute()
+            app0 = superimpose_otb(cloud_mask_img, nir_band_img, "temp0.tif" )
 
-            app1 = otbApplication.Registry.CreateApplication("BandMath")
-            app1.AddParameterStringList("il", nir_band_img)
-            app1.AddParameterStringList("il", red_band_img)
-            app1.SetParameterString("out", "temp1.tif")
-            app1.SetParameterString("exp", "(im1b1-im2b1)/(im1b1+im2b1+1.E-6)*1000")
-            app1.SetParameterInt("ram", 4000)
-            app1.Execute()
-
-            app2 = otbApplication.Registry.CreateApplication("BandMath")
-            app2.AddImageToParameterInputImageList("il", app1.GetParameterOutputImage("out"))
-            app2.AddImageToParameterInputImageList("il", app0.GetParameterOutputImage("out"))
-            app2.SetParameterString("out", "temp2.tif")
-            app2.SetParameterString("exp", "(im2b1=="+cloud_free_mask_value+")?im1b1:0")
-            app2.SetParameterInt("ram", 4000)
-            app2.Execute()
-
-            app3 = otbApplication.Registry.CreateApplication("ManageNoData")
-            app3.SetParameterInputImage("in", app2.GetParameterOutputImage("out"))
-            app3.SetParameterOutputImagePixelType("out", otbApplication.ImagePixelType_int16)
-            app3.SetParameterString("mode", "changevalue")
+            app1 = bandmath_otb(il=[nir_band_img, red_band_img], output_file="temp1.tif", exp="(im1b1-im2b1)/(im1b1+im2b1+1.E-6)*1000")
+            app2 = bandmath_otb(il_object=[app1.GetParameterOutputImage("out"), app0.GetParameterOutputImage("out")], output_file="temp2.tif", exp=f"(im2b1=={cloud_free_mask_value})?im1b1:0")
 
             # if shapefile is provided, it will be used to clip spectral index to the output image, else image is directly written
             if shape_file:
-                app3.SetParameterString("out", "temp3.tif")
-                app3.Execute()
-
-                # Todo replace by logger
                 logger.info(f"shape file used: {shape_file}")
-                app4 = otbApplication.Registry.CreateApplication("ExtractROI")
-                app4.SetParameterInputImage("in", app3.GetParameterOutputImage("out"))
-                app4.SetParameterString("mode", "fit")
-                app4.SetParameterString("mode.fit.vect", shape_file)
-                app4.SetParameterString("out", outfile_with_path+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES")
-                app4.SetParameterOutputImagePixelType("out", otbApplication.ImagePixelType_int16)
-                app4.SetParameterInt("ram", 1000)
-                app4.ExecuteAndWriteOutput()
+                app3 = managenodata_otb(input_image=app2.GetParameterOutputImage("out"), output_image="temp3.tif", action='exe')
+                extract_ROI_otb(input_file= app3.GetParameterOutputImage("out"), shape_file=shape_file, output_file=f"{outfile_with_path}?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES")
 
             else:
-                app3.SetParameterString("out", outfile_with_path+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES")
-                app3.SetParameterInt("ram", 1000)
-                app3.ExecuteAndWriteOutput()
+                managenodata_otb(input_image=app2.GetParameterOutputImage("out"), output_image=f"{outfile_with_path}?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES", action='write&exe')
 
             logger.info(f'NDVI File created: {outfile_with_path}')
 
@@ -144,15 +108,7 @@ def ndvi_calculation_concatenated(file, nir_band_nb, red_band_nb, output_directo
             logger.warning(f'File {outfile_with_path} already exists, it has not been created again')
 
         else:
-            app = otbApplication.Registry.CreateApplication("RadiometricIndices")
-
-            app.SetParameterString("in", file)
-            app.SetParameterInt("channels.nir", nir_band_nb)
-            app.SetParameterInt("channels.red", red_band_nb)
-            app.SetParameterStringList("list", ['Vegetation:NDVI'])
-            app.SetParameterString("out", outfile_with_path)
-
-            app.ExecuteAndWriteOutput()
+            radiometric_indices_otb(file, outfile_with_path, nir_band_nb, red_band_nb)
 
             logger.info(f'NDVI File created: {outfile_with_path}')
 

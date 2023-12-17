@@ -153,7 +153,7 @@ if __name__ == "__main__":
         files = list_files(pattern=args.suffixes_name, directory=args.input_dir, subfolder=True)
 
         if len(files) == 0:
-            logger.warning("no concatBGRPIP files found")
+            logger.warning("no concat BGRPIP files found")
 
         for image in files:
             ndvi_calculation_concatenated(image, args.nir_band_nb, args.red_band_nb, args.output_dir)

@@ -118,20 +118,20 @@ def ndvi_calculation_concatenated(file, nir_band_nb, red_band_nb, output_directo
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(prog='NDVI calculation', description='Generate ndvi tif')
+    parser = argparse.ArgumentParser(prog='NDVI calculation', description='Generate ndvi tif', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subparsers = parser.add_subparsers(help='sub-command help', dest='mode')
 
-    parser.add_argument('--input-directory', '-i',  dest='input_dir', default=os.path.join(os.getcwd(), '01_DATA'), help='Input images file directory')
-    parser.add_argument('--output-directory', '-o', dest='output_dir', default=os.path.join(os.getcwd(), '02_RES'), help='Output images file directory')
+    parser.add_argument('-i', '--input-directory',  dest='input_dir', default=os.path.join(os.getcwd(), '01_DATA'), help='Input images file directory.')
+    parser.add_argument('-o', '--output-directory', dest='output_dir', default=os.path.join(os.getcwd(), '02_RES'), help='Output images file directory.')
 
     parser_concat = subparsers.add_parser('concat', help='options for concatenated mode')
-    parser_concat.add_argument('--nir-band-nb', '-nb',  dest='nir_band_nb', default=4, help='Inform the position of the near infrared bands in the images (1 for the first band)')
-    parser_concat.add_argument('--red-band-nb', '-rb',  dest='red_band_nb', default=3, help='Inform the position of the red bands in the images (1 for the first band)')
+    parser_concat.add_argument('-nb', '--nir-band-nb' ,  dest='nir_band_nb', default=4, help='Inform the position of the near infrared bands in the images (1 for the first band). default (4)')
+    parser_concat.add_argument('-rb', '--red-band-nb',  dest='red_band_nb', default=3, help='Inform the position of the red bands in the images (1 for the first band). Default (3)')
     parser_concat.add_argument('suffixes_name', type=str, nargs='+', help='Input images file suffixes (ex: *_FRE_ConcatenateImageBGRPIR)')
 
     parser_band = subparsers.add_parser('band', help='options for band mode')
-    parser_band.add_argument('--format', '-f', choices=['S2-2A', 'S2-2A-ESA', 'S2-3A'], required=True, dest='format', help='Sentinel-2 level : S2-2A = image processed with MAJA, S2-3A = cloud free synthesis processed with WASP, S2-2A-ESA = image processed with SEN2COR')
-    parser_band.add_argument('--shapefile-directory', '-shpdir', required=False, dest='shape_directory', help=' [Optional] shapefile (must have same CRS as input image) to clip the output computed index')
+    parser_band.add_argument('-f', '--format', choices=['S2-2A', 'S2-2A-ESA', 'S2-3A'], required=True, dest='format', help='Sentinel-2 level : S2-2A = image processed with MAJA, S2-3A = cloud free synthesis processed with WASP, S2-2A-ESA = image processed with SEN2COR')
+    parser_band.add_argument('-shpdir', '--shapefile-directory', required=False, dest='shape_directory', help=' [Optional] shapefile (must have same CRS as input image) to clip the output computed index')
 
     args = parser.parse_args()
 
@@ -143,9 +143,17 @@ if __name__ == "__main__":
     if args.mode == 'band':
         band_files = search_B4_B8(args.input_dir, args.format, subfolder=True)
 
+        if len(band_files['B4']) == 0 and len(band_files['B8']) == 0:
+            logger.warning("no B4 B8 files found")
+
         for red, nir, mask in zip(band_files['B4'], band_files['B8'], band_files['cloud_masks']):
             ndvi_calculation_band(args.format, nir, red, mask, args.output_dir, args.shape_directory)
 
     elif args.mode == 'concat':
-        for image in list_files(pattern=args.suffixes_name, directory=args.input_dir, subfolder=True):
+        files = list_files(pattern=args.suffixes_name, directory=args.input_dir, subfolder=True)
+
+        if len(files) == 0:
+            logger.warning("no concatBGRPIP files found")
+
+        for image in files:
             ndvi_calculation_concatenated(image, args.nir_band_nb, args.red_band_nb, args.output_dir)

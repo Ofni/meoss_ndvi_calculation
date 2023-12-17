@@ -15,7 +15,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
-def list_files(pattern=['*'], directory=None, extension='tif', subfolder=False):
+def list_files(pattern=['*'], directory=os.getcwd(), extension='tif', subfolder=False):
     """
     Function to list files in a directory with a specific extension. files can be filtered with a pattern.
     without any arguments, the function will list all .tif files in the current directory.
@@ -174,7 +174,9 @@ def generate_output_file_name(file, format, prefix='', prefix2='', suffix=''):
 
 
 ####################################################################
-####   LEGACY CODE TO BE DELETED IF NO lONGER BE USED    ###########
+####   LEGACY CODE TO BE DELETED IF NO lONGER BE USED     ##########
+####   CODE NOT MODIFIED AS NOT IN SCOPE OF THE TEST      ##########
+####   CODE NOT USED FOR THE NEW NDVI CALCULATION SCRIPT  ##########
 ####################################################################
 def open_image(filename, verbose=False):
     """

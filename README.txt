@@ -47,8 +47,8 @@
         python ndvi_calculation.py concat -h
         python ndvi_calculation.py band -h
 
-        python ndvi_calculation.py band -i <input_folder> -f S2-2A
-        python ndvi_calculation.py concat -i <input_folder> -o <output_folder> *ConcatenateImageBGRPIR
+        python ndvi_calculation.py -i <input_folder> band  -f S2-2A
+        python ndvi_calculation.py -i <input_folder> -o <output_folder> concat  *ConcatenateImageBGRPIR
 
         python ndvi_calculation.py -i /home/guillaume/Recrutement_test_dev/cas1_env-afo/01_data/ concat *BGRPIR
         python ndvi_calculation.py -i /home/guillaume/Recrutement_test_dev/ band -f S2-2A
